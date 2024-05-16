@@ -47,11 +47,6 @@
             background-color: #0056b3;
         }
 
-        #result {
-            margin-top: 20px;
-            font-size: 20px;
-        }
-
         #recognizedText {
             margin-top: 20px;
             font-size: 18px;
@@ -70,7 +65,6 @@
         <div id="question-container"></div>
         <div id="recognizedText"></div> <!-- Container to display recognized text -->
         <div id="timer"></div> <!-- Container to display timer -->
-        <div id="result"></div>
         <button onclick="startRecognition()">Start Voice Recognition</button>
     </div>
 
@@ -209,6 +203,11 @@
             }
         }
 
+        function displayResult() {
+            const finalResult = `Your final score is ${score} out of ${questions.length}`;
+            window.location.href = `quiz-result.html?result=${encodeURIComponent(finalResult)}`;
+        }
+
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
             window.speechSynthesis.speak(utterance);
@@ -216,6 +215,7 @@
     </script>
 </body>
 </html>
+
 
 
 
