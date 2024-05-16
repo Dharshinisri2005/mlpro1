@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #quiz {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+            max-width: 600px;
+            width: 80%;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        #recognizedText {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        #timer {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz">
+        <h2>Quiz</h2>
+        <div id="question-container"></div>
+        <div id="recognizedText"></div> <!-- Container to display recognized text -->
+        <div id="timer"></div> <!-- Container to display timer -->
+        <div id="result"></div>
+        <button onclick="startRecognition()">Start Voice Recognition</button>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "What is the capital of France?",
+                options: ["Paris", "Rome", "Madrid", "Berlin"],
+                answer: 0 // Index of correct option (Paris)
+            },
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                answer: 1 // Index of correct option (Mars)
+            },
+            {
+                question: "Who wrote 'Romeo and Juliet'?",
+                options: ["William Shakespeare", "Charles Dickens", "Jane Austen", "Leo Tolstoy"],
+                answer: 0 // Index of correct option (William Shakespeare)
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let recognition; // Declare recognition object outside function to make it accessible globally
+        let timerInterval;
+
+        function displayQuestion() {
+            const questionContainer = document.getElementById("question-container");
+            const questionData = questions[currentQuestionIndex];
+            questionContainer.innerHTML = `
+                <h3>Question ${currentQuestionIndex + 1}</h3>
+                <p>${questionData.question}</p>
+                <ul>
+                    ${questionData.options.map((option, index) => `
+                        <li><button onclick="checkAnswer(${index})">${index + 1}. ${option}</button></li>
+                    `).join('')}
+                </ul>
+            `;
+
+            // Read the question and options aloud
+            const speechText = questionData.question + ". Options are " + questionData.options.join(", ");
+            speak(speechText);
+        }
+
+        function checkAnswer(selectedOption) {
+            const questionData = questions[currentQuestionIndex];
+            if (selectedOption === questionData.answer) {
+                score++;
+            }
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                displayQuestion();
+                startRecognition(); // Start voice recognition for the next question
+                resetTimer(); // Reset the timer for the next question
+            } else {
+                displayResult();
+            }
+        }
+
+        function startRecognition() {
+            recognition = new webkitSpeechRecognition() || new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = true; // Enable interim results to display recognition as you speak
+
+            recognition.onresult = function(event) {
+                const recognizedDiv = document.getElementById("recognizedText");
+                const recognizedText = event.results[0][0].transcript.toLowerCase();
+                recognizedDiv.innerHTML = "You said: " + recognizedText; // Display recognized text
+                console.log(recognizedText);
+
+                // Check if spoken text matches any option
+                const options = questions[currentQuestionIndex].options.map(option => option.toLowerCase());
+                const optionIndex = options.indexOf(recognizedText);
+                if (optionIndex !== -1) {
+                    checkAnswer(optionIndex); // Call checkAnswer with the index
+                } else if (recognizedText === 'start') {
+                    startQuiz(); // Start quiz if "start quiz" is recognized
+                } else {
+                    console.log("Spoken text doesn't match any option or 'Start Quiz'.");
+                }
+            }
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error occurred: ' + event.error);
+            }
+
+            recognition.onend = function() {
+                if (currentQuestionIndex < questions.length) {
+                    recognition.start();
+                }
+            }
+
+            recognition.start();
+            console.log('Speech recognition started.');
+        }
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            displayQuestion();
+            startRecognition(); // Start voice recognition for the first question
+            resetTimer(); // Start the timer for the first question
+        }
+
+        function startTimer() {
+            const timerElement = document.getElementById("timer");
+            let timeLeft = 30; // 30 seconds
+            timerElement.textContent = `Time left: ${timeLeft} seconds`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = `Time left: ${timeLeft} seconds`;
+                if (timeLeft <= 3 && timeLeft > 0) {
+                    speak(timeLeft);
+                }
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            startTimer();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+                resetTimer();
+            } else {
+                displayResult();
+            }
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

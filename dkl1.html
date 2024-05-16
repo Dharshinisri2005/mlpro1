@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #webcam-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #label-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .prediction-button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .prediction-button:hover {
+            background-color: #0056b3;
+        }
+
+        #predicted-class {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        #question-container {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-container {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .answers-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .answer-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Teachable Machine Quiz</div>
+        <button type="button" class="prediction-button" onclick="init()">Start</button>
+        <div id="webcam-container"></div>
+        <div id="label-container"></div>
+        <div id="buttons-container"></div>
+        <div id="question-container"></div>
+        <div id="predicted-class"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">
+        const URL = "https://teachablemachine.withgoogle.com/models/6OlEZccKr/";
+
+        let model, webcam, labelContainer, maxPredictions, buttons, questions, currentQuestionIndex, userAnswers;
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            const flip = true;
+            webcam = new tmImage.Webcam(200, 200, flip);
+            await webcam.setup();
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+
+            const buttonsContainer = document.getElementById("buttons-container");
+            buttons = [];
+            for (let i = 0; i < maxPredictions; i++) {
+                const button = document.createElement("button");
+                button.innerText = `Class ${i+1}`;
+                button.classList.add("prediction-button");
+                button.dataset.index = i;
+                button.addEventListener("click", () => selectClass(i));
+                buttonsContainer.appendChild(button);
+                buttons.push(button);
+            }
+
+            questions = [
+                { question: "What color is the sky?", answerIndex: 0, options: ["Blue", "Red", "Green", "Yellow"] }, // Index of correct answer
+                { question: "What is 2 + 2?", answerIndex: 1, options: ["3", "4", "5", "6"] },
+          
+            ];
+
+            currentQuestionIndex = 0;
+            displayQuestion();
+            userAnswers = new Array(questions.length).fill(null); 
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+
+            const maxIndex = prediction.findIndex(pred => pred.probability === Math.max(...prediction.map(p => p.probability)));
+            
+            if (maxIndex !== -1) {
+                const predictedClassContainer = document.getElementById("predicted-class");
+                predictedClassContainer.innerText = `Predicted Class: ${maxIndex + 1}`;
+            }
+        }
+
+        async function selectClass(classIndex) {
+            console.log(`Class ${classIndex + 1} selected`);
+            userAnswers[currentQuestionIndex] = classIndex; // Save user's answer
+            if (classIndex === questions[currentQuestionIndex].answerIndex) {
+                console.log("Correct answer!");
+            } else {
+                console.log("Wrong answer!");
+            }
+            // Uncomment the line below if you want the user to confirm the answer
+            // skipToNextQuestion();
+        }
+
+        function skipToNextQuestion() {
+            // Predict user's answer after one minute
+            predictUserAnswer().then(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    displayQuestion();
+                } else {
+                    console.log("Quiz finished!");
+                    console.log("User answers:", userAnswers); // Output user's answers
+                    displayResult(); // Display result
+                    console.log("The quiz has ended."); // Message indicating quiz end
+                }
+            });
+        }
+
+        async function predictUserAnswer() {
+            const prediction = await model.predict(webcam.canvas);
+            const maxIndex = prediction.findIndex(pred => pred.probability === Math.max(...prediction.map(p => p.probability)));
+            userAnswers[currentQuestionIndex] = maxIndex; // Save user's answer based on prediction
+        }
+
+        function displayQuestion() {
+            const questionContainer = document.getElementById("question-container");
+            questionContainer.innerText = questions[currentQuestionIndex].question;
+
+            const buttonsContainer = document.getElementById("buttons-container");
+            buttonsContainer.innerHTML = '';
+            questions[currentQuestionIndex].options.forEach((option, index) => {
+                const button = document.createElement("button");
+                button.innerText = option;
+                button.classList.add("prediction-button");
+                button.dataset.index = index;
+                button.addEventListener("click", () => selectClass(index));
+                buttonsContainer.appendChild(button);
+            });
+
+            // Clear predicted class after displaying options
+            const predictedClassContainer = document.getElementById("predicted-class");
+            predictedClassContainer.innerText = '';
+            
+            setTimeout(skipToNextQuestion, 30000); // Delay for 1 minute (60000 milliseconds)
+        }
+
+        async function displayResult() {
+            let correctCount = 0;
+
+            // Calculate correct answers
+            for (let i = 0; i < questions.length; i++) {
+                if (userAnswers[i] === questions[i].answerIndex) {
+                    correctCount++;
+                }
+            }
+
+            // Prepare the quiz result message
+            const quizResult = `Quiz Result: ${correctCount} out of ${questions.length}`;
+
+            // Prepare recorded answers
+            const recordedAnswers = userAnswers.map((answer, index) => `Question ${index + 1}: ${questions[index].options[answer]}`).join("<br>");
+
+            // Construct the URL with the result as a parameter
+            const url = `result.html?result=${encodeURIComponent(quizResult)}&answers=${encodeURIComponent(recordedAnswers)}`;
+
+            // Redirect to the result page
+            window.location.href = url;
+        }
+    </script>
+</body>
+</html>
