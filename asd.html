@@ -202,10 +202,27 @@
                 displayResult();
             }
         }
+     async function displayResult() {
+            let correctCount = 0;
 
-        function displayResult() {
-            const finalResult = `Your final score is ${score} out of ${questions.length}`;
-            window.location.href = `quiz-result.html?result=${encodeURIComponent(finalResult)}`;
+            // Calculate correct answers
+            for (let i = 0; i < questions.length; i++) {
+                if (userAnswers[i] === questions[i].answerIndex) {
+                    correctCount++;
+                }
+            }
+
+            // Prepare the quiz result message
+            const quizResult = `Quiz Result: ${correctCount} out of ${questions.length}`;
+
+            // Prepare recorded answers
+            const recordedAnswers = userAnswers.map((answer, index) => `Question ${index + 1}: ${questions[index].options[answer]}`).join("<br>");
+
+            // Construct the URL with the result as a parameter
+            const url = `result.html?result=${encodeURIComponent(quizResult)}&answers=${encodeURIComponent(recordedAnswers)}`;
+
+            // Redirect to the result page
+            window.location.href = url;
         }
 
         function speak(text) {
