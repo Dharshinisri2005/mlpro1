@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "description": "Your project description",
   "scripts": {
-    "test": "jest" // This script runs Jest tests
+    "test": "jest" 
   },
   "devDependencies": {
-    "jest": "^27.5.1" // Jest is a dev dependency
+    "jest": "^27.5.1" 
   },
   "jest": {
     "testMatch": [
-      "**/__tests__/**/*.[jt]s?(x)", // Matches test files in __tests__ directory
-      "**/?(*.)+(spec|test).[tj]s?(x)" // Matches files ending with .spec.js, .test.js, etc.
+      "**/__tests__/**/*.[jt]s?(x)", 
+      "**/?(*.)+(spec|test).[tj]s?(x)" 
     ],
     "testPathIgnorePatterns": [
-      "/node_modules/" // Ignores files in node_modules directory
+      "/node_modules/" 
     ]
   }
 }
