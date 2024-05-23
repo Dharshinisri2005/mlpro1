@@ -1,15 +1,20 @@
 {
-  "name": "my-project",
+  "name": "your-project-name",
   "version": "1.0.0",
-  "description": "",
-  "main": "new 1.html",
+  "description": "Your project description",
   "scripts": {
     "test": "jest"
   },
-  "keywords": [],
-  "author": "Your Name",
-  "license": "ISC",
   "devDependencies": {
-    "jest": "^26.6.3"
+    "jest": "^27.5.1"
+  },
+  "jest": {
+    "testMatch": [
+      "**/__tests__/**/*.[jt]s?(x)",
+      "**/?(*.)+(spec|test).[tj]s?(x)"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ]
   }
 }
