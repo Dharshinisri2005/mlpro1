@@ -1,20 +1,13 @@
 {
-  "name": "your-project-name",
-  "version": "1.0.0",
-  "description": "Your project description",
-  "scripts": {
-    "test": "jest" 
-  },
-  "devDependencies": {
-    "jest": "^27.5.1" 
-  },
-  "jest": {
-    "testMatch": [
-      "**/__tests__/**/*.[jt]s?(x)", 
-      "**/?(*.)+(spec|test).[tj]s?(x)" 
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/" 
-    ]
+    "name": "my-project",
+    "version": "1.0.0",
+    "description": "",
+    "main": "new 1.html",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Your Name",
+    "license": "ISC",
+    "dependencies": {}
   }
-}
